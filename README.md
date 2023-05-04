@@ -27,7 +27,7 @@ data = caelus.data.load('car', year=2014)
 data
 ```
 
-To load the data, this function first look for the file `car/car_bsrn_2014.zip` in `$HOME/CAELUS-DATA`, where `$HOME` is the user directory. If it is not there, it downloads the file from the zenodo.org repository, so that it is locally available for later requests. The local data path `$HOME/CAELUS-DATA` is set in the module `caelus.options`. The user can change it in real time or hardcoded editing the file `$INSTALL_DIR/caelus/options.py`, where `$INSTALL_DIR` is the Python path where `caelus` is installed.
+To load the data, this function first look for the file `car/car_bsrn_2014.zip` in `$HOME/CAELUS-DATA`, where `$HOME` is the user directory. If it is not there, it downloads the file from the zenodo.org repository, so that it is locally available for subsequent requests. The local data path `$HOME/CAELUS-DATA` is set in the module `caelus.options`. The user can change it in real time or hardcode it by editing the file `$INSTALL_DIR/caelus/options.py`, where `$INSTALL_DIR` is the Python path where `caelus` is installed.
 
 #### Dealing with logging
 
@@ -49,7 +49,7 @@ logger.add(sys.stderr, level='INFO')
 
 #### Classifying data
 
-With the data in the `data` DataFrame is very simple to make the classification:
+With the variables already in the `data` DataFrame is very simple to make the classification:
 
 ```python
 sky_type = caelus.classify(data)  # Pandas Series
