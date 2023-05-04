@@ -15,7 +15,7 @@ author = 'Jose A Ruiz-Arias'
 author_email = 'jararias@uma.es'
 url = ''
 description = (
-    'Classification Algorithm for the Evaluation of the cLoUdless Situations'
+    'CAELUS: Classification Algorithm for the Evaluation of the cLoUdless Situations'
 )
 keywords = ["solar irradiance", "sky classification", "variability", "python"]
 classifiers = [
@@ -41,7 +41,7 @@ setup(
     keywords=keywords,
     classifiers=classifiers,
     packages=[name],
-    install_requires=['numpy', 'pandas', 'scipy', 'loguru'],
+    install_requires=['numpy', 'pandas', 'scipy', 'matplotlib', 'loguru'],
 )
 
 if os.path.exists(f'{name}/_version.py'):
