@@ -26,7 +26,7 @@ import caelus
 data = caelus.data.load('car', year=2014)
 ```
 
-The first 5 data rows with `sza > 85deg` are:
+The first 5 data rows with `sza < 85deg` are:
 
 <table border="1" class="dataframe">  <thead>    <tr style="text-align: right;">      <th></th>      <th>longitude</th>      <th>sza</th>      <th>eth</th>      <th>ghi</th>      <th>dif</th>      <th>ghics</th>      <th>ghicda</th>      <th>sky_type</th>    </tr>    <tr>      <th>times_utc</th>      <th></th>      <th></th>      <th></th>      <th></th>      <th></th>      <th></th>      <th></th>      <th></th>    </tr>  </thead>  <tbody>    <tr>      <th>2015-01-01 07:55:30</th>      <td>5.059</td>      <td>84.8945</td>      <td>125.26</td>      <td>24.0</td>      <td>23.0</td>      <td>57.55</td>      <td>87.60</td>      <td>5</td>    </tr>    <tr>      <th>2015-01-01 07:56:30</th>      <td>5.059</td>      <td>84.7556</td>      <td>128.66</td>      <td>25.0</td>      <td>25.0</td>      <td>59.62</td>      <td>90.27</td>      <td>5</td>    </tr>    <tr>      <th>2015-01-01 07:57:30</th>      <td>5.059</td>      <td>84.6171</td>      <td>132.05</td>      <td>34.0</td>      <td>26.0</td>      <td>61.69</td>      <td>92.94</td>      <td>5</td>    </tr>    <tr>      <th>2015-01-01 07:58:30</th>      <td>5.059</td>      <td>84.4790</td>      <td>135.43</td>      <td>48.0</td>      <td>27.0</td>      <td>63.78</td>      <td>95.61</td>      <td>5</td>    </tr>    <tr>      <th>2015-01-01 07:59:30</th>      <td>5.059</td>      <td>84.3413</td>      <td>138.79</td>      <td>54.0</td>      <td>28.0</td>      <td>65.87</td>      <td>98.29</td>      <td>5</td>    </tr>  </tbody></table>
 
