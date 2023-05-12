@@ -1,12 +1,4 @@
 
-from pathlib import Path
-
-
-# data locations...
-HOME = Path.home()
-LOCAL_DATABASE = HOME / 'CAELUS-DATA'
-REMOTE_FILE_PATTERN = 'https://zenodo.org/record/7897639/files/{0}?download=1'
-
 # max. solar zenith angle, degrees
 MAX_SZA = 85.
 

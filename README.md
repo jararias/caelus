@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7897639.svg)](https://doi.org/10.5281/zenodo.7897639)
 
 
-This is a Python implementation of the CAELUS sky classification algorithm, described in Ruiz-Arias and Gueymard (2023) (under review). It also provides easy access to the [data](https://doi.org/10.5281/zenodo.7897639) that has been used to develop, validate and benchmark the classifier.
+This is a Python implementation of the CAELUS sky classification algorithm, described in Ruiz-Arias and Gueymard (2023) (under review). It also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that has been used to develop, validate and benchmark the classifier.
 
 #### Installation
 
@@ -13,7 +13,7 @@ python3 -m pip install git+https://github.com/jararias/caelus
 
 #### Load data
 
-`caelus` can access to the individual site-and-year data files available in the [data repository](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
+`caelus` can access the individual site-and-year data files available in the [data repository](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
 
 ```python
 import caelus
@@ -34,23 +34,15 @@ data = caelus.data.load('car', year=2014)
 | 2014-01-01 08:03:30 |       5.059 | 83.7942 | 152.16 |   102 |    56 |   68.38 |   109.02 |          4 |
 | 2014-01-01 08:04:30 |       5.059 | 83.6583 | 155.48 |   104 |    56 |   70.41 |   111.71 |          4 |
 
-The first time to access data for a site and year, it will take a while because it has to be downloaded. Afterwards, it is locally available in the file `<site_name>/<site_name>_bsrn_<year>.zip` (i.e., `car/car_bsrn_2014.zip` in the example above) in `$HOME/CAELUS-DATA`, where `$HOME` is the user directory. Hence, subsequent requests are faster.
+When data for a site and year is accessed for the first time, it will take a while because it is first downloaded to a local database. The local database is, by default, `<HOME>/CAELUS-DATA`, where `<HOME>` is the user's directory. However, the user may choose a different location by setting the environment variable `CAELUS_DATA_DIR` to the desired location. Once downloaded, the data will be available in the file `<site_name>/<site_name>_bsrn_<year>.zip` (e.g., `car/car_bsrn_2014.zip`) relative to the local database. Subsequent data requests that involve this file will be faster because the file is already downloaded.
 
 #### Dealing with logging
 
-By default, logging messages are disabled. To enable them:
+Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/stable/). If you want to hide logging messages, just do:
 
 ```python
 from loguru import logger
-logger.enable('caelus')
-```
-
-Normally, the logging level is `DEBUG`. To change it:
-
-```python
-import sys
-logger.remove()
-logger.add(sys.stderr, level='INFO')
+logger.disable('caelus')
 ```
 
 #### Classifying data

@@ -1,24 +1,25 @@
 
+import os
 import json
 import functools
+from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
 import pandas as pd
 from loguru import logger
 
-from .options import (
-    LOCAL_DATABASE,
-    REMOTE_FILE_PATTERN
-)
 
+REMOTE_FILE_PATTERN = 'https://zenodo.org/record/7897639/files/{0}?download=1'
 
-logger.disable(__name__)
-
-
+# determine the path to the local data base..
+LOCAL_DATABASE = Path(os.environ.get('CAELUS_DATA_DIR')) or Path.home() / 'CAELUS-DATA'
 if not LOCAL_DATABASE.exists():
+    logger.info(f'Creating local database: {LOCAL_DATABASE}')
     LOCAL_DATABASE.mkdir(parents=True, exist_ok=True)
 
+# add the dataset metadata, if not yet in the local data base..
 if not (file_name := LOCAL_DATABASE / 'metadata.json').exists():
+    logger.info('Downloading metadata to local database')
     remote_file_name = REMOTE_FILE_PATTERN.format('metadata.json')
     pd.read_json(remote_file_name).to_json(file_name)
 METADATA = json.load(open(file_name, 'r'))
@@ -33,7 +34,7 @@ def load(site_name, year):
 
     if not (file_name := localdir / f'{site_name}_bsrn_{year}.zip').exists():
         remote_file_name = REMOTE_FILE_PATTERN.format(file_name.name)
-        logger.info(f'Downloading file {file_name}')
+        logger.info(f'Downloading file {file_name.name} to {file_name.parent}')
         data = pd.read_csv(
             remote_file_name,
             parse_dates=[0,],
