@@ -11,6 +11,6 @@ with open(f"{cfg['metadata']['name']}/version.py", 'w') as fh:
     fh.write(f"platform_machine = '{platform.machine()}'\n")
 
 with open('requirements.txt') as fh:
-    requirements = fh.read.splitlines()
+    requirements = fh.read().splitlines()
 
 setup(install_requires=requirements)
