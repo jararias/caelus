@@ -12,7 +12,12 @@ from loguru import logger
 REMOTE_FILE_PATTERN = 'https://zenodo.org/record/7897639/files/{0}?download=1'
 
 # determine the path to the local data base..
-LOCAL_DATABASE = Path(os.environ.get('CAELUS_DATA_DIR')) or Path.home() / 'CAELUS-DATA'
+try:
+    LOCAL_DATABASE = Path(os.environ.get('CAELUS_DATA_DIR'))
+    # if CAELUS_DATA_DIR not set, os.environ returns None, and Path raises a TypeError
+except TypeError:
+    LOCAL_DATABASE = Path.home() / 'CAELUS-DATA'
+
 if not LOCAL_DATABASE.exists():
     logger.info(f'Creating local database: {LOCAL_DATABASE}')
     LOCAL_DATABASE.mkdir(parents=True, exist_ok=True)
