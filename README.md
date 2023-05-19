@@ -2,8 +2,12 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7897639.svg)](https://doi.org/10.5281/zenodo.7897639)
 
+<p align="center">
+    <img src="assets/sky_type_pie_all_climates.png" alt="Sky type distribution">
+</p>
 
-This is a Python implementation of the CAELUS sky classification algorithm, described in Ruiz-Arias and Gueymard (2023) (under review). It also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that has been used to develop, validate and benchmark the classifier.
+
+A Python implementation of the CAELUS sky classification algorithm, described in Ruiz-Arias and Gueymard (2023) (under review). It also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that has been used to develop, validate and benchmark the classifier.
 
 #### Installation
 
