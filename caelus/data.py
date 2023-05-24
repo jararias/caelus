@@ -18,20 +18,23 @@ try:
 except TypeError:
     LOCAL_DATABASE = Path.home() / 'CAELUS-DATA'
 
-if not LOCAL_DATABASE.exists():
-    logger.info(f'Creating local database: {LOCAL_DATABASE}')
-    LOCAL_DATABASE.mkdir(parents=True, exist_ok=True)
-
-# add the dataset metadata, if not yet in the local data base..
-if not (file_name := LOCAL_DATABASE / 'metadata.json').exists():
-    logger.info('Downloading metadata to local database')
-    remote_file_name = REMOTE_FILE_PATTERN.format('metadata.json')
-    pd.read_json(remote_file_name).to_json(file_name)
-METADATA = json.load(open(file_name, 'r'))
+METADATA_FILE = LOCAL_DATABASE / 'metadata.json'
 
 
 @functools.cache
 def load(site_name, year):
+    # pylint: disable=no-member
+
+    if not LOCAL_DATABASE.exists():
+        logger.info(f'Creating local database: {LOCAL_DATABASE}')
+        LOCAL_DATABASE.mkdir(parents=True, exist_ok=True)
+
+    # add the dataset metadata, if not yet in the local data base..
+    if not METADATA_FILE.exists():
+        logger.info('Downloading metadata to local database')
+        remote_file_name = REMOTE_FILE_PATTERN.format('metadata.json')
+        pd.read_json(remote_file_name).to_json(METADATA_FILE)
+    METADATA = json.load(open(METADATA_FILE, 'r', encoding='utf-8'))
 
     localdir = LOCAL_DATABASE / site_name
     if not localdir.exists():
