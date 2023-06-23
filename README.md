@@ -15,9 +15,25 @@ A Python implementation of the CAELUS sky classification algorithm, described in
 python3 -m pip install git+https://github.com/jararias/caelus
 ```
 
+#### Classifying data
+
+The classification process is simple:
+
+```python
+import caelus
+sky_type = caelus.classify(data)
+````
+
+where `data` is a Pandas DataFrame with the following 1-min time-series variables: `longitude` (site's longitude, in degrees), solar zenith angle (`sza`, in degrees), extraterrestrial solar irradiance (`eth`, in W/m2), GHI (`ghi`, in W/m2), DIF (`dif`, in W/m2), clear-sky GHI (`ghics`, in W/m2) and GHI in a clean and dry atmosphere (`ghicda`, in W/m2). The output is a Pandas Series with the corresponding 1-min time-series of sky types. In particular, `caelus` identifies up to 6 different sky classes, with labels from 2 thru 7, being 1 reserved for _UNKNOWN_ situations (e.g., `sza > 85deg`). The correspondence between the integer labels and the actual sky conditions are mapped in the SkyType enumerate type, as you could see by running the following code snippet:
+
+```python
+for n in range(1, 8):
+    print(n, caelus.skytype.SkyType(n))
+```
+
 #### Load data
 
-`caelus` can access the individual site-and-year data files available in the [data repository](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
+In order to evaluate the algorithm, `caelus` can also access the individual site-and-year data files used to develop it, and that are available in the [https://doi.org/10.5281/zenodo.7897639](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
 
 ```python
 import caelus
@@ -28,7 +44,7 @@ import caelus
 data = caelus.data.load('car', year=2014)
 ```
 
-`data` is a DataFrame with the following variables: `longitude` (site's longitude, in degrees), solar zenith angle (`sza`, in degrees), extraterrestrial solar irradiance (`eth`, in W/m2), GHI (`ghi`, in W/m2), DIF (`dif`, in W/m2), clear-sky GHI (`ghics`, in W/m2), GHI in a clean and dry atmosphere (`ghicda`, in W/m2), and `sky_type` (see below). For instance, the first 5 data rows with `sza < 85deg` and no `NaN`'s are:
+In this case, `data` is a DataFrame with the exactly the same variables enumerated above plus `sky_type`, which is the classification performed by `caelus` for each data instance. For instance, the first 5 data rows with `sza < 85deg` and no `NaN`'s are:
 
 | times_utc           |   longitude |     sza |    eth |   ghi |   dif |   ghics |   ghicda |   sky_type |
 |:--------------------|------------:|--------:|-------:|------:|------:|--------:|---------:|-----------:|
@@ -47,21 +63,6 @@ Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/st
 ```python
 from loguru import logger
 logger.disable('caelus')
-```
-
-#### Classifying data
-
-With the variables already available in the `data` DataFrame, the classification process is simple:
-
-```python
-sky_type = caelus.classify(data)
-````
-
-`sky_type` is a Pandas Series of integers from 1 to 7, which represent the 6 sky classes (from 2 to 7), being 1 reserved for _UNKNOWN_ situations (e.g., `sza > 85deg`). The equivalence between the integer labels and the actual sky conditions are mapped in the SkyType enumerate type, as you could see by running the following code snippet:
-
-```python
-for n in range(1, 8):
-    print(n, caelus.skytype.SkyType(n))
 ```
 
 #### Comparing results
