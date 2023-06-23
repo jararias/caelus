@@ -33,7 +33,7 @@ for n in range(1, 8):
 
 #### Load data
 
-In order to evaluate the algorithm, `caelus` can also access the individual site-and-year data files used to develop it, and that are available in the [https://doi.org/10.5281/zenodo.7897639](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
+In order to evaluate the algorithm, `caelus` can also access the individual site-and-year data files used to develop it, and that are available in [https://doi.org/10.5281/zenodo.7897639](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
 
 ```python
 import caelus
