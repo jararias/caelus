@@ -6,8 +6,25 @@
     <img src="assets/sky_type_pie_all_climates.png" alt="Sky type distribution">
 </p>
 
+A Python implementation of the CAELUS sky classification algorithm, described in:
 
-A Python implementation of the CAELUS sky classification algorithm, described in Ruiz-Arias and Gueymard (2023) (under review). It also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that has been used to develop, validate and benchmark the classifier.
+> Ruiz-Arias, J. A., and Gueymard, C. A. (2023) CAELUS: classification of sky conditions from 1-min time series of global solar irradiance using variability indices and dynamic thresholds. _Solar Energy_, 263, 111895 doi: [10.1016/j.solener.2023.111895](https://doi.org/10.1016/j.solener.2023.111895) (open access)
+
+CAELUS classifies the sky conditions with solar zenith angle smaller than 85$`^{\circ}`$ in up to 6 different classes:
+
+- OVERCAST
+- THICK CLOUDS
+- SCATTER CLOUDS
+- THIN CLOUDS
+- CLOUDLESS
+- CLOUD ENHANCEMENT
+
+only from 1-min time series of solar position, global horizontal irradiance and global horizontal irradiance under hypothetical cloudless and cloudless-clean-and-dry atmospheres.
+
+The package also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that was used to develop, validate and benchmark the algorithm.
+
+> [!IMPORTANT]
+> The name of the different sky conditions is only orientative of the expected situations within each class. However, it does not mean that, for instance, all situations detected as `THICK_CLOUDS` are actually made up only by thick clouds. Among other reasons, because what can be considered a "thick" cloud is highly subjective, and also because there are many situations made up by those "thick" clouds, but also others.
 
 #### Installation
 
@@ -24,7 +41,32 @@ import caelus
 sky_type = caelus.classify(data)
 ````
 
-where `data` is a Pandas DataFrame with the following 1-min time-series variables: `longitude` (site's longitude, in degrees), solar zenith angle (`sza`, in degrees), extraterrestrial solar irradiance (`eth`, in W/m2), GHI (`ghi`, in W/m2), DIF (`dif`, in W/m2), clear-sky GHI (`ghics`, in W/m2) and GHI in a clean and dry atmosphere (`ghicda`, in W/m2). The output is a Pandas Series with the corresponding 1-min time-series of sky types. In particular, `caelus` identifies up to 6 different sky classes, with labels from 2 thru 7, being 1 reserved for _UNKNOWN_ situations (e.g., `sza > 85deg`). The correspondence between the integer labels and the actual sky conditions are mapped in the SkyType enumerate type, as you could see by running the following code snippet:
+where `data` is a Pandas DataFrame with the following 1-min time-series variables:
+
+- `longitude`: the site's longitude, in degrees
+- `sza`: the solar zenith angle, in degrees
+- `eth`: the extraterrestrial solar irradiance, in W/m$`^2`$
+- `ghi`: the global horizontal irradiance, in W/m$`^2`$
+- `ghics`: the clear-sky global horizontal irradiacne, in W/m$`^2`$
+- `ghicda`: the clean-and-dry-sky global horizontal irradiance, in W/m$`^2`$
+
+The dataframe's index must be a Pandas DateTimeIndex in coordinated universal time (UTC).
+
+> [!WARNING]
+> It is important to keep data gaps to a minimum as the sky-type classification algorithm relies heavily on variability indicators that are computed as a centered moving window. Data gaps prevent a proper evaluation of such indicators and the classification performance can be affected.
+
+> [!NOTE]
+> While a direct approach to evaluate `ghicda` is devised, it has to be provided externally. This can be done using a clear-sky model with null aerosols and water vapor. It can be the same clear-sky model used to evaluate `ghics` (i.e., [SPARTA](https://github.com/jararias/pysparta)).
+
+> [!NOTE]
+> Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/stable/). If you want to show logging messages, just do:
+>
+> ```python
+> from loguru import logger
+> logger.enable('caelus')
+> ```
+
+The output is an integer Pandas Series with the same index as the input. In particular, `caelus` identifies the different sky classes with labels from 2 thru 7 (1 is reserved for _UNKNOWN_ situations; e.g., `sza > 85deg`). The correspondence between the integer labels and the actual sky conditions are mapped in the SkyType enumerate type, as you could see by running the following code snippet:
 
 ```python
 for n in range(1, 8):
@@ -33,7 +75,7 @@ for n in range(1, 8):
 
 #### Load data
 
-In order to evaluate the algorithm, `caelus` can also access the individual site-and-year data files used to develop it, and that are available in [https://doi.org/10.5281/zenodo.7897639](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
+In order to evaluate the algorithm, `caelus` can also access the individual site-and-year data files used to develop it, and that are available in [zenodo.org](https://doi.org/10.5281/zenodo.7897639). For instance, to load the data taken during 2014 in the BSRN station in Carpentras, France, one can do the following:
 
 ```python
 import caelus
@@ -54,16 +96,10 @@ In this case, `data` is a DataFrame with the exactly the same variables enumerat
 | 2014-01-01 08:03:30 |       5.059 | 83.7942 | 152.16 |   102 |    56 |   68.38 |   109.02 |          4 |
 | 2014-01-01 08:04:30 |       5.059 | 83.6583 | 155.48 |   104 |    56 |   70.41 |   111.71 |          4 |
 
+> [!NOTE]
+> Although `dif` is in the dataframe, it is not used by `caelus`.
+
 When data for a site and year is accessed for the first time, it will take a while because it is first downloaded to a local database. The local database is, by default, `<HOME>/CAELUS-DATA`, where `<HOME>` is the user's directory. However, the user may choose a different location by setting the environment variable `CAELUS_DATA_DIR` to the desired location. Once downloaded, the data will be available in the file `<site_name>/<site_name>_bsrn_<year>.zip` (e.g., `car/car_bsrn_2014.zip`) relative to the local database. Subsequent data requests that involve this file will be faster because the file is already downloaded.
-
-#### Dealing with logging
-
-Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/stable/). If you want to show logging messages, just do:
-
-```python
-from loguru import logger
-logger.enable('caelus')
-```
 
 #### Comparing results
 
