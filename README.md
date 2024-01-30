@@ -58,11 +58,11 @@ When data for a site and year is accessed for the first time, it will take a whi
 
 #### Dealing with logging
 
-Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/stable/). If you want to hide logging messages, just do:
+Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/stable/). If you want to show logging messages, just do:
 
 ```python
 from loguru import logger
-logger.disable('caelus')
+logger.enable('caelus')
 ```
 
 #### Comparing results
