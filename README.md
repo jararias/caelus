@@ -53,10 +53,10 @@ where `data` is a Pandas DataFrame with the following 1-min time-series variable
 The dataframe's index must be a Pandas DateTimeIndex in coordinated universal time (UTC).
 
 > [!WARNING]
-> It is important to keep data gaps to a minimum as the sky-type classification algorithm relies heavily on variability indicators that are computed as a centered moving window. Data gaps prevent a proper evaluation of such indicators and the classification performance can be affected.
+> It is important to keep data gaps to a minimum as the sky-type classification algorithm relies heavily on variability indicators that are computed as a centered moving window. Data gaps prevent a proper evaluation of such indicators and the classification performance can be deteriorated.
 
 > [!NOTE]
-> While a direct approach to evaluate `ghicda` is devised, it has to be provided externally. This can be done using a clear-sky model with null aerosols and water vapor. It can be the same clear-sky model used to evaluate `ghics` (i.e., [SPARTA](https://github.com/jararias/pysparta)).
+> While an internal approach to evaluate `ghicda` is devised, it will have to be provided externally. This can be done using a clear-sky model with null aerosols and water vapor. It can be the same clear-sky model used to evaluate `ghics` (i.e., [SPARTA](https://github.com/jararias/pysparta)).
 
 > [!NOTE]
 > Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/stable/). If you want to show logging messages, just do:
