@@ -6,7 +6,7 @@ from loguru import logger
 from .skytype import SkyType
 
 
-logger.enable(__name__)
+logger.disable(__name__)
 
 
 def sky_segmentation(sky_type):
