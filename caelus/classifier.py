@@ -229,7 +229,7 @@ def ghi_mirroring(data):
 
         # fill gaps shorter than DT to improve the rolling averages
         this_ghi_filled = this_ghi.interpolate(
-            'time', limit=pd.Timedelta(4, 'H').seconds // 60)
+            'time', limit=pd.Timedelta(4, 'h').seconds // 60)
         this_ghi_filled.loc[nighttime] = np.nan
 
         if len(this_cosz.loc[am & daytime]):

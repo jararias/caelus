@@ -3,8 +3,8 @@
 MAX_SZA = 85.
 
 # moving average time windows
-DT = '30T'
-DT_F = '10T'
+DT = '30min'
+DT_F = '10min'
 
 # thresholds (Table 3)
 CLOUDEN_MIN_KCS = 1.06
