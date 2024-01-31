@@ -19,7 +19,7 @@ CAELUS classifies the sky conditions with solar zenith angle smaller than 85$`^{
 - CLOUDLESS
 - CLOUD ENHANCEMENT
 
-only from 1-min time series of solar position, global horizontal irradiance and global horizontal irradiance under hypothetical cloudless and cloudless-clean-and-dry atmospheres.
+only from 1-min time series of solar position, global horizontal irradiance and global horizontal irradiance under hypothetical cloudless and cloudless-and-clean-and-dry atmospheres.
 
 The package also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that was used to develop, validate and benchmark the algorithm.
 
@@ -41,22 +41,22 @@ import caelus
 sky_type = caelus.classify(data)
 ````
 
-where `data` is a Pandas DataFrame with the following 1-min time-series variables:
+where `data` is a Pandas [DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) with the following 1-min time-series variables (columns):
 
 - `longitude`: the site's longitude, in degrees
 - `sza`: the solar zenith angle, in degrees
 - `eth`: the extraterrestrial solar irradiance, in W/m$`^2`$
 - `ghi`: the global horizontal irradiance, in W/m$`^2`$
 - `ghics`: the clear-sky global horizontal irradiacne, in W/m$`^2`$
-- `ghicda`: the clean-and-dry-sky global horizontal irradiance, in W/m$`^2`$
+- `ghicda`: the cloudless-and-clean-and-dry-sky global horizontal irradiance, in W/m$`^2`$
 
-The dataframe's index must be a Pandas DateTimeIndex in coordinated universal time (UTC).
+The dataframe's index must be a Pandas DatetimeIndex in coordinated universal time (UTC).
 
-> [!WARNING]
+> [!IMPORTANT]
 > It is important to keep data gaps to a minimum as the sky-type classification algorithm relies heavily on variability indicators that are computed as a centered moving window. Data gaps prevent a proper evaluation of such indicators and the classification performance can be deteriorated.
 
 > [!NOTE]
-> While an internal approach to evaluate `ghicda` is devised, it will have to be provided externally. This can be done using a clear-sky model with null aerosols and water vapor. It can be the same clear-sky model used to evaluate `ghics` (i.e., [SPARTA](https://github.com/jararias/pysparta)).
+> While an internal approach to evaluate `ghicda` is devised, it will have to be provided externally. This can be done using a clear-sky model with null aerosols and water vapor. It can be the same clear-sky model used to evaluate `ghics` (e.g., [SPARTA](https://github.com/jararias/pysparta)).
 
 > [!NOTE]
 > Logging in `caelus` is managed with [loguru](https://loguru.readthedocs.io/en/stable/). If you want to show logging messages, just do:
