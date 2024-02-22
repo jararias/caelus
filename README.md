@@ -24,7 +24,7 @@ using for that 1-min time series of: solar position, global horizontal irradianc
 The package also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that was used to develop, validate and benchmark the algorithm.
 
 > [!IMPORTANT]
-> The name of the different sky conditions is only orientative of the expected situations within each class. However, it does not mean that, for instance, all situations detected as `THICK_CLOUDS` are actually made up only by thick clouds. Among other reasons, because what can be considered a "thick" cloud is highly subjective, and also because there are many situations made up by those "thick" clouds, but also others.
+> The name of the different sky conditions is only orientative of the expected situations within each class. However, it does not mean that, for instance, all situations detected as `THICK_CLOUDS` are actually made up only by thick clouds. Among other reasons, because what can be considered a "thick" cloud is highly subjective, and also because there are many situations made up by those "thick" clouds, but also others. The same reasoning holds for all other sky conditions.
 
 #### Installation
 
