@@ -10,7 +10,7 @@ A Python implementation of the CAELUS sky classification algorithm, described in
 
 > Ruiz-Arias, J. A., and Gueymard, C. A. (2023) CAELUS: classification of sky conditions from 1-min time series of global solar irradiance using variability indices and dynamic thresholds. _Solar Energy_, 263, 111895 doi: [10.1016/j.solener.2023.111895](https://doi.org/10.1016/j.solener.2023.111895) (open access)
 
-CAELUS classifies the sky conditions with solar zenith angle smaller than 85$`^{\circ}`$ in up to 6 different classes:
+CAELUS classifies the sky conditions in up to 6 different classes:
 
 - OVERCAST
 - THICK CLOUDS
@@ -19,7 +19,7 @@ CAELUS classifies the sky conditions with solar zenith angle smaller than 85$`^{
 - CLOUDLESS
 - CLOUD ENHANCEMENT
 
-only from 1-min time series of solar position, global horizontal irradiance and global horizontal irradiance under hypothetical cloudless and cloudless-and-clean-and-dry atmospheres.
+using for that 1-min time series of: solar position, global horizontal irradiance and global horizontal irradiances under hypothetical cloudless and cloudless-and-clean-and-dry atmospheres. It works for solar zenith angles up to 85$`^{\circ}`$.
 
 The package also provides easy access to the [data set](https://doi.org/10.5281/zenodo.7897639) that was used to develop, validate and benchmark the algorithm.
 
