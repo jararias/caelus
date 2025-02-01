@@ -1,3 +1,80 @@
+# see https://github.com/ofek/hatch-showcase for an example
+
 [build-system]
-requires = ['setuptools', 'wheel']
-build-backend = 'setuptools.build_meta'
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "caelus"
+dynamic = ["version"]
+description = "CAELUS: Classification Algorithm for the Evaluation of the cLoUdless Situations"
+readme = "README.md"
+requires-python = ">=3.8"
+license-files = { paths = ["LICENSE"] }
+authors = [
+    { name = "Jose A Ruiz-Arias", email = "jararias@uma.es" }
+]
+keywords = [
+    "solar radiation",
+    "synthetic",
+    "1-min resolution"
+]
+classifiers = [
+    "Natural Language :: English",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+]
+
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+    "loguru",
+    "typer",
+]
+
+[project.urls]
+Homepage = "https://github.com/jararias/caelus"
+
+[project.scripts]
+caelus = "caelus.cli:main"
+
+[tool.hatch.version]
+path = "src/caelus/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/caelus"]
+
+[tool.ruff]
+line-length = 99
+src = ["src/caelus"]
+exclude = [
+    ".git",
+    "build",
+    "dist",
+    "venv",
+    ".venv",
+    "docs",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+select = [
+    # "C", # TODO: mccabe - code complecity
+    "C4",
+    "E",
+    "F",
+    "T10",
+    "T20",
+    "Q",
+    "RET",
+]
+ignore = [
+    "F401"
+]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "src/caelus"
+]
