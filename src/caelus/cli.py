@@ -58,7 +58,7 @@ def main(
         raise FileNotFoundError(f'missing input file "{csvfile}"')
 
     data = load_data(csvfile)
-    sky_type = classify(data.iloc[:2000]).to_frame("value")
+    sky_type = classify(data).to_frame("value")
 
     with open(csvfile, "r") as f:
         dialect = csv.Sniffer().sniff(f.read(1024))
