@@ -7,6 +7,7 @@ import typer
 from typing_extensions import Annotated
 
 from . import classify, REQUIRED_TO_CLASSIFY
+from .skytype import SkyType
 
 DATE_TIME_COLUMNS = {"Year", "Month", "Day", "Hour", "Minute", "Second"}
 
@@ -78,6 +79,12 @@ def main(
             sky_type = (sky_type
                         .reset_index()
                         .rename(columns={"index": "times", "value": "sky_type"}))
+
+    print(sky_type.sky_type
+          .value_counts(normalize=True)
+          .rename(index=lambda n: SkyType(n).name)
+          .to_frame("fraction"))
+
     sky_type.to_csv(output,
                     index=False,
                     sep=dialect.delimiter,
