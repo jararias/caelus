@@ -1,0 +1,33 @@
+
+# see https://github.com/ofek/hatch-showcase for an inspiring example
+
+#=================================================================================================
+#  Default environment, for development...
+#=================================================================================================
+
+[envs.default]
+description = "default environment for development"
+python = "3.10"
+installer = "uv"
+dependencies = [
+    # pyproject.toml, plus...
+    "matplotlib~=3.7.5",
+    "ipython~=8.26",
+    "seaborn~=0.13.2",
+    "ipykernel==6.29.5",  # <-- to run jupyter notebooks in vscode
+    "isort~=5.13.2",
+    "ruff~=0.5.1",
+    "typer",
+]
+
+[envs.default.scripts]
+# `hatch run ipython`: runs ipython in this environment with the profile in .ipython
+ipython3 = "ipython --profile-dir=.ipython"
+
+# `hatch run version`: shows this python version and its location
+version = """python -V && which python && python -c 'import caelus; print("caelus", caelus.__version__)'"""
+
+# `hatch run installed`: lists the installed packages in this environment
+installed = "uv pip list"
+
+# caelus = "caelus"

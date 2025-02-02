@@ -28,13 +28,26 @@ The package also provides easy access to the [data set](https://doi.org/10.5281/
 
 #### Installation
 
-```python
+```bash
 python3 -m pip install git+https://github.com/jararias/caelus
 ```
+Or to install in a virtual environment:
+
+```bash
+python3 -m venv venv-caelus
+source venv-caelus/bin/activate
+python3 -m pip install git+https://github.com/jararias/caelus
+```
+To get out the virtual environment just type ```deactivate```. To enter again, go to the directory where the virtual environment was created and do ```source venv-caelus/bin/activate```.
 
 #### Classifying data
 
-The classification process is simple:
+The classification process is simple. It can be done directly from a csv file with the appropriate data using the script ```caelus``` that is installed with the classification library. Type the following in your terminal to get usage information (be sure that you are in the virtual environment, that is, after doing ```source venv-caelus/bin/activate```):
+
+```bash
+caelus --help
+```
+The sky classification can be used also within a python script:
 
 ```python
 import caelus
