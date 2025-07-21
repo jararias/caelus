@@ -52,7 +52,7 @@ def reduce_sky_segments(sky_segments):
     def reduce_sky_type(x):
         return x['sky_type'].unique().item()
 
-    grouper = sky_segments.groupby('segment')
+    grouper = sky_segments.groupby('segment')[sky_segments.columns]
     sky_patches = grouper.apply(reduce_sky_type).to_frame(name='sky_type')
     sky_patches['segment_len'] = grouper.count()
     sky_patches['prev_sky_type'] = sky_patches['sky_type'].shift(1)
