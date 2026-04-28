@@ -1,16 +1,16 @@
-# see https://github.com/ofek/hatch-showcase for an example
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build"]
+build-backend = "uv_build"
+
 
 [project]
 name = "caelus"
-dynamic = ["version"]
+version = "0.2.0"
 description = "CAELUS: Classification Algorithm for the Evaluation of the cLoUdless Situations"
 readme = "README.md"
-requires-python = ">=3.8"
-license-files = { paths = ["LICENSE"] }
+requires-python = ">=3.11"
+license-files = ["LICENSE"]
 authors = [
     { name = "Jose A Ruiz-Arias", email = "jararias@uma.es" }
 ]
@@ -26,28 +26,35 @@ classifiers = [
 ]
 
 dependencies = [
-    "numpy",
-    "pandas",
-    "scipy",
-    "matplotlib",
-    "loguru",
-    "typer",
+    "loguru>=0.7.3",
+    "matplotlib>=3.10.9",
+    "numpy>=2.4.4",
+    "pandas>=3.0.2",
+    "platformdirs>=4.9.6",
+    "polars>=1.40.1",
+    "pyarrow>=24.0.0",
+    "pysparta",
+    "scipy>=1.17.1",
+    "sunwhere",
+    "typer>=0.25.0",
+]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.13.0",
+    "pyinstrument>=5.1.2",
+    "ruff>=0.15.12",
+    "seaborn>=0.13.2",
 ]
 
 [project.urls]
 Homepage = "https://github.com/jararias/caelus"
 
-[project.scripts]
-caelus = "caelus.cli:main"
-
-[tool.hatch.version]
-path = "src/caelus/__init__.py"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/caelus"]
+# [project.scripts]
+# caelus = "caelus.cli:main"
 
 [tool.ruff]
-line-length = 99
+line-length = 120
 src = ["src/caelus"]
 exclude = [
     ".git",
@@ -74,7 +81,14 @@ ignore = [
     "F401"
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"src/caelus/filters.py" = ["E501"]
+
 [tool.ruff.lint.isort]
 known-first-party = [
     "src/caelus"
 ]
+
+[tool.uv.sources]
+pysparta = { git = "https://github.com/jararias/pysparta" }
+sunwhere = { git = "https://github.com/jararias/sunwhere" }

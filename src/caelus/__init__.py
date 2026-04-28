@@ -1,11 +1,13 @@
 
-import sys
-
-from loguru import logger
+import importlib.metadata
 
 from . import data, diagnostics
 from .classifier import classify
+from .logtools import enable_logger, disable_logger
 
-__version__ = "0.2.0"
+try:
+    __version__ = importlib.metadata.version("caelus")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.0.0"
 
-REQUIRED_TO_CLASSIFY = {"longitude", "sza", "eth", "ghi", "ghics", "ghicda"}
+__all__ = ["data", "diagnostics", "classify", "__version__", "REQUIRED_TO_CLASSIFY"]
