@@ -1,11 +1,14 @@
+import importlib.metadata
 
-import sys
-
-from loguru import logger
-
-from . import data, diagnostics
+from . import data
 from .classifier import classify
+from .logtools import enable_logger
 
-__version__ = "0.2.0"
+try:
+    __version__ = importlib.metadata.version("caelus-solar")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.0.0"
 
-REQUIRED_TO_CLASSIFY = {"longitude", "sza", "eth", "ghi", "ghics", "ghicda"}
+__all__ = ["data", "classify", "__version__", "REQUIRED_TO_CLASSIFY"]
+
+enable_logger(level="INFO")

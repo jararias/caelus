@@ -9,6 +9,7 @@ from typing_extensions import Annotated
 from . import classify, REQUIRED_TO_CLASSIFY
 from .skytype import SkyType
 
+
 DATE_TIME_COLUMNS = {"Year", "Month", "Day", "Hour", "Minute", "Second"}
 
 def load_data(path):
@@ -38,10 +39,10 @@ def load_data(path):
 
 csvfile_argument = typer.Argument(
     show_default=False,
-    help=("csv input file. Must have a column 'times' with the UTC timestamps for "
+    help=("csv input file. Must have a column 'times' with UTC timestamps for "
           "each row or, alternatively, the columns 'Year', 'Month', 'Day', 'Hour', "
-          "'Minute' and 'Second'. In addition, the following columns are required: "
-          "'longitude', 'sza', 'eth', 'ghi', 'ghics', 'ghicda'.")
+          "'Minute' and 'Second'. `ghi` and `ghicda` are also required columns. "
+          "See the documentation for more details.")
 )
 
 outfile_argument = typer.Argument(
@@ -80,7 +81,7 @@ def main(
                         .reset_index()
                         .rename(columns={"index": "times", "value": "sky_type"}))
 
-    print(sky_type.sky_type
+    print(sky_type.sky_type  # noqa: T201
           .value_counts(normalize=True)
           .rename(index=lambda n: SkyType(n).name)
           .to_frame("fraction"))

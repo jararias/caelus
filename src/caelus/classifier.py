@@ -1,24 +1,29 @@
+from typing import Literal
 
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
-
+import polars as po
 from loguru import logger
 
-from . import options
-from .skytype import SkyType
-from .filters import (
-    clean_spurious_sky_patches,
-    clean_scatter_clouds_flanked_by_thin_clouds,
-    clean_cloudless_to_thin_clouds_transitions,
-    clean_thin_clouds_to_scatter_clouds_transitions
-)
-
+from . import filters, options, sky_indices
+from .helpers import ensure_tz_aware_datetime_index
+from .skytype import SkyType, _ordered_labels
 
 logger.disable(__name__)
+logger = logger.opt(colors=True)
+
+REQUIRED_TO_CLASSIFY = {"ghi", "ghics"}
 
 
-def classify(data, enable_ghi_mirroring=True, full_output=False):
+def classify(
+    data: pd.DataFrame,
+    latitude: float,
+    longitude: float,
+    engine: Literal["pandas", "polars"] = "polars",
+    apply_filters: bool = True,
+    categorical: bool = False,
+    full_output: bool = False,
+):
     """
     Classifies a 1-min GHI time series into the following six sky types: overcast,
     thick clouds, scattered clouds, thin clouds, cloudless or cloud enhancement. If
@@ -30,20 +35,31 @@ def classify(data, enable_ghi_mirroring=True, full_output=False):
     -----------
 
     data: Pandas DataFrame
-      the 1-min input time series. The DataFrame must contain: solar zenith angle
-      (sza, in degrees), extraterrestrial horizontal solar irradiance (eth, in W/m2),
-      global horizontal irradiance (ghi, in W/m2), clear sky global horizontal solar
-      irradiance (ghics, in W/m2), and clean-and-dry atmosphere global horizontal
-      solar irradiance (ghicda, in W/m2)
+      the 1-min input time series. The DataFrame must contain: global horizontal
+      irradiance (`ghi`, in W/m2) and clear sky global horizontal solar irradiance
+      (`ghics`, in W/m2).
 
-    enable_ghi_mirroring: bool
-      extrapolation of ghi data beyond sunrise and sunset to mitigate border effects
-      in the classification for low sun altitudes
+    latitude: float(-90, 90)
+      site's latitude
+
+    longitude: float[-180, 180]
+      site's longitude
+
+    engine: str
+      library used to perform the classification (polars or pandas). polars is
+      much faster. Default: polars
+
+    apply_filters: bool
+      revise the sky classification to remove potential unrealistic assignments
+
+    categorical: bool
+      if True, the output column `sky_type` is returned as a categorical variable with
+      self-describing categories (`UNKNOWN`, `OVERCAST`, `THICK_CLOUDS`, `SCATTERED_CLOUDS`,
+      `THIN_CLOUDS`, `CLOUDLESS`, `CLOUD_ENHANCEMENT`). If False, it is returned as integer
+      from 1 to 7.
 
     full_output: bool
-      when set to False, the output DataFrame only has the column `sky_type` with the
-      classification results. When set to True, it has additional columns with internal
-      variability indices used during the classification process.
+      output data internally used to compute the sky type
 
     Returns:
     --------
@@ -55,197 +71,100 @@ def classify(data, enable_ghi_mirroring=True, full_output=False):
     other columns (see the `full_output` input argument)
 
     """
+    import sunwhere
+    from spartasolar.atmosphere import merra2_cda
 
-    required = ['sza', 'eth', 'ghi', 'ghics', 'ghicda']
-    if missing := list(set(required).difference(data.columns)):
-        raise ValueError(f'missing required variables: {", ".join(missing)}')
+    if missing := list(REQUIRED_TO_CLASSIFY.difference(data.columns)):
+        raise ValueError(f"missing required variables: {', '.join(missing)}")
 
-    if enable_ghi_mirroring is True:
-        if 'longitude' not in data.columns:
-            raise ValueError('missing required variable: longitude')
+    if engine not in ("pandas", "polars"):
+        raise ValueError(f"expected engine in ['pandas', 'polars']. Got {engine=}")
+    logger.info(f"using <red>{engine=}</red>")
 
-    daytime = data['sza'] <= options.MAX_SZA
+    if not (-90.0 < latitude < 90.0):
+        raise ValueError(f"{latitude=} out of bounds")
 
-    Kcs = (data['ghi'].divide(data['ghics'])
-           .where(data['sza'] < 87., np.nan).clip(0.))
+    if not (-180 <= longitude <= 180):
+        raise ValueError(f"{longitude=} out of bounds")
 
-    ghi = data.ghi
-    if enable_ghi_mirroring is True:
-        ghi = ghi_mirroring(data)
+    # ensure data_ index is tz-aware
+    data_ = data.set_index(ensure_tz_aware_datetime_index(data.index)).copy()
+    # remove missing timestamps by filling with nans
+    time_step = (data_.index[1:] - data_.index[:-1]).unique().min()
+    dense_times = pd.date_range(
+        start=data_.index[0], end=data_.index[-1], freq=time_step, tz=data_.index.tz, inclusive="both"
+    )
+    dense_data = data_.reindex(dense_times)
 
-    mean_ghi = ghi.rolling(options.DT, center=True).mean()
-    Km = mean_ghi.divide(data['ghicda']).where(daytime, np.nan).clip(0.)
+    solpos = sunwhere.sites(times=dense_data.index, latitude=latitude, longitude=longitude)
+    sza = solpos.sza.isel(site=0).to_pandas()
+    csky_cda = merra2_cda.at_sites(times=dense_data.index, latitude=latitude, longitude=longitude).compute()
 
-    Kv = (
-        (ghi - mean_ghi).diff().abs().rolling(options.DT, center=True)
-        .sum()/pd.Timedelta(options.DT).total_seconds()
+    # push all required data together in a pandas dataframe
+    dense_data = dense_data.assign(
+        sza=sza,
+        daytime=sza <= options.MAX_SZA,
+        cosz=solpos.cosz.isel(site=0).to_pandas(),
+        tst=solpos.true_solar_time.isel(site=0).to_pandas(),
+        ghicda=csky_cda.ghi.isel(site=0).to_pandas(),
     )
 
-    Kvf = (
-        (ghi - mean_ghi).diff().abs().rolling(options.DT_F, center=True)
-        .sum()/pd.Timedelta(options.DT_F).total_seconds()
+    result = _classify_from_ensured_dataframe(
+        dense_data,
+        engine=engine,
+        apply_filters=apply_filters,
+        categorical=categorical,
+        full_output=full_output
     )
 
-    # Thresholding...
+    # keep only the original timestamps
+    result = result.reindex(data_.index)
 
-    sza = data['sza']
-    clouden = (
-        (
-            daytime &
-            (sza < 80.) &
-            (Kcs > options.CLOUDEN_MIN_KCS) &
-            (Kv > options.CLOUDEN_MIN_KV) & (Kvf > options.CLOUDEN_MIN_KVF)
-        )
-    )
+    # restore original index, in particular, if it was tz-naive
+    result.index = data.index
 
-    cloudless = (
-        (
-            daytime &
-            (sza < 75.) &
-            (Km > options.CLOUDLESS_MIN_KM) &
-            (Kcs > options.CLOUDLESS_MIN_KCS) & (Kcs < options.CLOUDLESS_MAX_KCS) &
-            (Kv < options.CLOUDLESS_MAX_KV)
-        ) |
-        (
-            daytime &
-            (sza >= 75.) &
-            (Km > options.CLOUDLESS_MIN_KM) &
-            (Kcs > 0.80) & (Kcs < 1.20) &
-            (Kv < options.CLOUDLESS_MAX_KV)
-        )
-    )
+    return result
 
-    overcast = (
-        daytime &
-        (Km < options.OVERCAST_MAX_KM) &
-        (Kv < options.OVERCAST_MAX_KV)
-    )
+def _classify_from_ensured_dataframe(
+    data: pd.DataFrame, engine: str, apply_filters: bool, categorical: bool, full_output: bool
+) -> pd.DataFrame:
 
-    cloudy = daytime & ~cloudless & ~overcast & ~clouden
+    mirror_ghi = False  # with True, polars and pandas differ. This is under investigation.
+    # For now, I set it to False to ensure consistency between engines because this option
+    # is not very much important. It only affects timestamps near the horizon.
 
-    thinclouds = (
-        cloudy &
-        (Km > options.THINCLOUDS_MIN_KM) &
-        (Kv >= options.THINCLOUDS_MIN_KV) & (Kv < options.THINCLOUDS_MAX_KV)
-    )
+    if engine == "pandas":
+        df_indices = sky_indices.calculate_with_pandas(data, mirror_ghi=mirror_ghi)
+        sky_type = sky_indices.classify_with_pandas(df_indices, full_output=full_output)
+        if apply_filters:
+            sky_type = filters.apply(sky_type, df_indices, full_output=full_output)
 
-    thickclouds = (
-        cloudy &
-        (Km < options.THICKCLOUDS_MAX_KM) &
-        (Kv >= options.THICKCLOUDS_MIN_KV) & (Kv < options.THICKCLOUDS_MAX_KV)
-    )
+    else:  # polars
+        # pandas to polars...
+        df = po.from_pandas(data.rename_axis("times_utc", axis=0), include_index=True)
 
-    scatterclouds = cloudy & ~thickclouds & ~thinclouds
+        df_indices = sky_indices.calculate_with_polars(df, mirror_ghi=mirror_ghi)
+        sky_type = sky_indices.classify_with_polars(df_indices, full_output=full_output)
+        if apply_filters:
+            sky_type = filters.apply(sky_type, df_indices, full_output=full_output)
 
-    sky_type = pd.Series(
-        index=data.index,
-        data=SkyType.UNKNOWN,
-        name='sky_type'
-    )
+        # polars to pandas...
+        df_indices = df_indices.to_pandas().set_index("times_utc").rename_axis(data.index.name, axis=0)
+        sky_type = sky_type.to_pandas().set_index("times_utc").rename_axis(data.index.name, axis=0)
+        if not full_output:
+            sky_type = sky_type["sky_type"]
 
-    sky_type.loc[overcast] = SkyType.OVERCAST
-    sky_type.loc[thickclouds] = SkyType.THICK_CLOUDS
-    sky_type.loc[scatterclouds] = SkyType.SCATTER_CLOUDS
-    sky_type.loc[thinclouds] = SkyType.THIN_CLOUDS
-    sky_type.loc[cloudless] = SkyType.CLOUDLESS
-    sky_type.loc[clouden] = SkyType.CLOUD_ENHANCEMENT
+    sky_type = sky_type.astype(np.int8).rename("sky_type")
 
-    # clean the sky classification...
+    try:
+        sky_type = sky_type.asfreq(pd.infer_freq(sky_type.index))
+    except Exception:
+        sky_type = sky_type.asfreq(None)
 
-    if options.CLEAN_SPURIOUS_SKY_PATCHES is True:
-        sky_type.loc[:] = clean_spurious_sky_patches(
-            sky_type, min_sky_patch_len=15, max_iter=50
-        )
+    if categorical:
+        sky_type = sky_type.map(lambda number: SkyType(number).name).astype("category")
+        sky_type = sky_type.cat.set_categories(_ordered_labels, ordered=True)
 
-    if options.CLEAN_SCATTER_CLOUDS_FLANKED_BY_THIN_CLOUDS is True:
-        sky_type.loc[:] = clean_scatter_clouds_flanked_by_thin_clouds(
-            sky_type, options.DT, sza, Km, Kv
-        )
-
-    if options.CLEAN_CLOUDLESS_TO_THIN_CLOUDS_TRANSITIONS is True:
-        sky_type.loc[:] = clean_cloudless_to_thin_clouds_transitions(
-            sky_type, Kv
-        )
-
-    if options.CLEAN_THIN_CLOUDS_TO_SCATTER_CLOUDS_TRANSITIONS is True:
-        sky_type.loc[:] = clean_thin_clouds_to_scatter_clouds_transitions(
-            sky_type, Kv
-        )
-
-    sky_type.loc[~daytime] = SkyType.UNKNOWN
-    sky_type.loc[data['ghi'].isna()] = SkyType.UNKNOWN
-
-    sky_type = sky_type.astype(int)
-
-    if full_output is True:
-        sky_type = sky_type.to_frame(name='sky_type')
-        sky_type['Km'] = Km
-        sky_type['Kv'] = Kv
-        sky_type['Kvf'] = Kvf
+    if full_output:
+        return sky_type.join(df_indices).assign(engine=engine)
     return sky_type
-
-
-def ghi_mirroring(data):
-
-    def true_solar_time(times_utc, longitude):
-        # eq. of time
-        doy = (times_utc.day_of_year.astype(float) +
-            (times_utc.hour + (times_utc.minute + times_utc.second/60)/60)/24)
-        n_days = pd.Series(index=times_utc, data=366.).where(times_utc.is_leap_year, 365.)
-        angle = (2.*np.pi / n_days) * doy
-        # this is a fit to match the NREL's SPA equation of time
-        eot = (0.00986571
-            + 0.58688718*np.cos(  angle) - 7.34538133*np.sin(  angle)
-            - 3.31493999*np.cos(2*angle) - 9.35366541*np.sin(2*angle)    
-            - 0.08151750*np.cos(3*angle) - 0.30892409*np.sin(3*angle)
-            - 0.13532889*np.cos(4*angle) - 0.17336220*np.sin(4*angle))  # minutes
-
-        dt64_s = np.datetime64(1, 's')
-        utc_f = np.array(times_utc, dtype=dt64_s).astype('float64')
-        tst_f = utc_f + (4. * longitude + eot) * 60.
-        return pd.to_datetime(np.array(tst_f, dtype=dt64_s))
-
-    def interpolate(xi, yi, x):
-        kwargs = dict(kind='linear', bounds_error=False, fill_value=np.nan)
-        return interp1d(xi, yi, **kwargs)(x)
-
-    required = ['sza', 'longitude', 'ghi']
-    if missing := list(set(required).difference(data.columns)):
-        raise ValueError(f'missing required variables: {", ".join(missing)}')
-
-    ghi = data['ghi']
-    ghi_mirror = ghi.copy()
-    cosz = pd.Series(index=ghi.index, data=np.cos(np.radians(data['sza'])))
-    tst = pd.Series(
-        index=ghi.index, data=true_solar_time(ghi.index, data['longitude']))
-
-    for (_, this_ghi) in ghi.groupby(tst.dt.date):
-
-        this_cosz = cosz.loc[this_ghi.index]
-        daytime = this_cosz > 0
-        nighttime = this_cosz <= 0
-        am = tst.loc[this_ghi.index].dt.hour < 12
-        pm = tst.loc[this_ghi.index].dt.hour >= 12
-
-        # fill gaps shorter than DT to improve the rolling averages
-        this_ghi_filled = this_ghi.interpolate(
-            'time', limit=pd.Timedelta(4, 'h').seconds // 60)
-        this_ghi_filled.loc[nighttime] = np.nan
-
-        if len(this_cosz.loc[am & daytime]):
-            this_ghi_filled.loc[am & nighttime] = -interpolate(
-                this_cosz.loc[am & daytime],
-                this_ghi_filled.loc[am & daytime],
-                -this_cosz.loc[am & nighttime]
-            )
-
-        if len(this_cosz.loc[pm & daytime]):
-            this_ghi_filled.loc[pm & nighttime] = -interpolate(
-                this_cosz.loc[pm & daytime],
-                this_ghi_filled.loc[pm & daytime],
-                -this_cosz.loc[pm & nighttime]
-            )
-
-        ghi_mirror.loc[this_ghi.index] = this_ghi_filled
-
-    return ghi_mirror

@@ -1,53 +1,77 @@
-# see https://github.com/ofek/hatch-showcase for an example
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv-build>=0.7.19"]
+build-backend = "uv_build"
 
 [project]
-name = "caelus"
-dynamic = ["version"]
+name = "caelus-solar"
+version = "0.3.0"
 description = "CAELUS: Classification Algorithm for the Evaluation of the cLoUdless Situations"
 readme = "README.md"
-requires-python = ">=3.8"
-license-files = { paths = ["LICENSE"] }
-authors = [
-    { name = "Jose A Ruiz-Arias", email = "jararias@uma.es" }
-]
+requires-python = ">=3.12"
+authors = [{name = "Jose A Ruiz-Arias", email = "jararias@uma.es"}]
+license = {text = "CC BY-NC-SA 4.0"}
 keywords = [
     "solar radiation",
-    "synthetic",
-    "1-min resolution"
+    "sky conditions",
+    "1-min resolution",
+    "clear-sky conditions",
+    "cloud enhancement",
+    "atmospheric modelling",
+    "solar energy"
 ]
 classifiers = [
     "Natural Language :: English",
     "Intended Audience :: Science/Research",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: Physics"
 ]
 
 dependencies = [
-    "numpy",
-    "pandas",
-    "scipy",
-    "matplotlib",
-    "loguru",
-    "typer",
+    "loguru>=0.7.3",
+    "matplotlib>=3.10.9",
+    "numpy>=2.4.4",
+    "pandas>=3.0.2",
+    "platformdirs>=4.9.6",
+    "polars>=1.40.1",
+    "pyarrow>=24.0.0",
+    "sparta-solar>=0.2.0",
+    "scipy>=1.17.1",
+    "sunwhere>=1.4.1",
+    "typer>=0.25.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/jararias/caelus"
+Homepage = "https://jararias.github.io/caelus"
+Documentation = "https://jararias.github.io/caelus"
+Repository = "https://jararias.github.io/caelus"
+"Bug Tracker" = "https://jararias.github.io/caelus/issues"
+Changelog = "https://jararias.github.io/caelus/blob/main/CHANGELOG.md"
 
-[project.scripts]
-caelus = "caelus.cli:main"
+[dependency-groups]
+dev = [
+    "ipython>=9.13.0",
+    "pyinstrument>=5.1.2",
+    "pykeepass>=4.1.1.post1",
+    "ruff>=0.15.12",
+    "seaborn>=0.13.2",
+]
 
-[tool.hatch.version]
-path = "src/caelus/__init__.py"
+# [project.scripts]
+# caelus = "caelus.cli:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/caelus"]
+[tool.uv.build-backend]
+module-name = "caelus"
+
+[tool.uv-build.targets.wheel]
+packages = ["caelus"]
+package-dir = {"" = "src"}
 
 [tool.ruff]
-line-length = 99
+line-length = 120
 src = ["src/caelus"]
 exclude = [
     ".git",
@@ -73,6 +97,9 @@ select = [
 ignore = [
     "F401"
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"src/caelus/filters.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = [
