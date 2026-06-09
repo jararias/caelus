@@ -1,13 +1,14 @@
-
 import importlib.metadata
 
-from . import data, diagnostics
+from . import data
 from .classifier import classify
-from .logtools import enable_logger, disable_logger
+from .logtools import enable_logger
 
 try:
-    __version__ = importlib.metadata.version("caelus")
+    __version__ = importlib.metadata.version("caelus-solar")
 except importlib.metadata.PackageNotFoundError:
     __version__ = "0.0.0"
 
-__all__ = ["data", "diagnostics", "classify", "__version__", "REQUIRED_TO_CLASSIFY"]
+__all__ = ["data", "classify", "__version__", "REQUIRED_TO_CLASSIFY"]
+
+enable_logger(level="INFO")

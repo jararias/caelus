@@ -20,7 +20,7 @@ pl.ion()
 
 flag = ("\033[91m\u2718\033[0m" if caelus.__version__ == "0.0.0"  # red cross
         else "\033[92m\u2714\033[0m")  # green tick
-print(f"`pysparta` imported with __version__ = {caelus.__version__} {flag}")  # noqa: T201
+print(f"`caelus` imported with __version__ = {caelus.__version__} {flag}")  # noqa: T201
 del(flag)
 
 caelus.enable_logger(level="DEBUG")

@@ -28,3 +28,7 @@ class SkyType(enum.IntEnum):
             if sky_type is cls.UNKNOWN:
                 continue
             yield sky_type
+
+
+_ordered_labels = [label for label, _ in sorted(SkyType.__members__.items(), key=lambda key_value: key_value[1])]
+

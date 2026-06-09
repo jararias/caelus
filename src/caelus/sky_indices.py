@@ -2,10 +2,13 @@
 import numpy as np
 import pandas as pd
 import polars as po
-from scipy.interpolate import interp1d
+from loguru import logger
 
 from . import options
 from .skytype import SkyType
+
+logger.disable(__name__)
+logger = logger.opt(colors=True)
 
 
 def calculate_with_pandas(data: pd.DataFrame, mirror_ghi: bool = True) -> pd.DataFrame:
@@ -33,6 +36,9 @@ def calculate_with_pandas(data: pd.DataFrame, mirror_ghi: bool = True) -> pd.Dat
 
 
 def mirror_ghi_with_pandas(data: pd.DataFrame) -> pd.Series:
+    from scipy.interpolate import interp1d
+
+    logger.info("with mirrored ghi")
 
     ghi = data["ghi"]
     cosz = data["cosz"]
@@ -196,56 +202,123 @@ def calculate_with_polars(data: po.DataFrame, mirror_ghi: bool = True) -> po.Dat
     ).drop(["diff_abs", "ghi_mirrored"]) # columnas temporales
 
 
-def mirror_ghi_with_polars(df: po.DataFrame) -> po.Series:
+# def mirror_ghi_with_polars(df: po.DataFrame) -> po.Series:
 
-    def process_day(group: po.DataFrame) -> po.DataFrame:
+#     def process_day(group: po.DataFrame) -> po.DataFrame:
 
-        # máscaras. Usamos numpy para scipy.interpolate.interp1d
-        cosz = group.get_column("cosz").to_numpy()
-        daytime = cosz > 0.
-        nighttime = ~daytime
-        hours = group.get_column("tst").dt.hour().to_numpy()
-        am = hours < 12
-        pm = hours >= 12
+#         # máscaras. Usamos numpy para scipy.interpolate.interp1d
+#         cosz = group.get_column("cosz").to_numpy()
+#         daytime = cosz > 0.
+#         nighttime = ~daytime
+#         hours = group.get_column("tst").dt.hour().to_numpy()
+#         am = hours < 12
+#         pm = hours >= 12
 
-        # # 1. Interpolación temporal simple para huecos cortos (limit=4h)
-        # # Polars no tiene interpolate(limit=...), usamos pandas para esta parte específica
-        # # o lo manejamos con una serie temporal de Polars si es necesario.
-        # # Aquí asumimos que ya viene pre-procesado o usamos un helper.
-        # s_ghi = group.select(
-        #     po.col("ghi").interpolate().alias("filled")
-        # ).get_column("filled").to_numpy()
+#         # # 1. Interpolación temporal simple para huecos cortos (limit=4h)
+#         # # Polars no tiene interpolate(limit=...), usamos pandas para esta parte específica
+#         # # o lo manejamos con una serie temporal de Polars si es necesario.
+#         # # Aquí asumimos que ya viene pre-procesado o usamos un helper.
+#         # s_ghi = group.select(
+#         #     po.col("ghi").interpolate().alias("filled")
+#         # ).get_column("filled").to_numpy()
 
-        s_ghi = group.get_column("ghi").to_numpy()
-        s_ghi[nighttime] = np.nan
+#         s_ghi = group.get_column("ghi").to_numpy()
+#         s_ghi[nighttime] = np.nan
 
-        # Función auxiliar de interpolación
-        def apply_mirror(mask_day, mask_night):
-            if mask_day.any() and mask_night.any():
-                xi = cosz[mask_day]
-                yi = s_ghi[mask_day]
-                # Eliminamos NaNs para que interp1d no falle
-                valid = ~np.isnan(yi) & ~np.isnan(xi)
-                if valid.any():
-                    f = interp1d(xi[valid], yi[valid], kind="linear", 
-                                 bounds_error=False, fill_value=np.nan)
-                    # El mirroring usa -cosz para el lado nocturno
-                    s_ghi[mask_night] = -f(-cosz[mask_night])
+#         # Función auxiliar de interpolación
+#         def apply_mirror(mask_day, mask_night):
+#             if mask_day.any() and mask_night.any():
+#                 xi = cosz[mask_day]
+#                 yi = s_ghi[mask_day]
+#                 # Eliminamos NaNs para que interp1d no falle
+#                 valid = ~np.isnan(yi) & ~np.isnan(xi)
+#                 if valid.any():
+#                     f = interp1d(xi[valid], yi[valid], kind="linear", 
+#                                  bounds_error=False, fill_value=np.nan)
+#                     # El mirroring usa -cosz para el lado nocturno
+#                     s_ghi[mask_night] = -f(-cosz[mask_night])
 
-        # 2. Mirroring AM y PM
-        apply_mirror(am & daytime, am & nighttime)
-        apply_mirror(pm & daytime, pm & nighttime)
+#         # 2. Mirroring AM y PM
+#         apply_mirror(am & daytime, am & nighttime)
+#         apply_mirror(pm & daytime, pm & nighttime)
 
-        return group.with_columns(ghi_mirror=po.Series(s_ghi))
+#         return group.with_columns(ghi_mirror=po.Series(s_ghi))
 
-    # Aplicamos la lógica por grupo de fecha
-    result = (
-        df.with_columns(date = po.col("tst").dt.date())
-        .group_by("date", maintain_order=True)
-        .map_groups(process_day)
-    )
+#     # Aplicamos la lógica por grupo de fecha
+#     result = (
+#         df.with_columns(date = po.col("tst").dt.date())
+#         .group_by("date", maintain_order=True)
+#         .map_groups(process_day)
+#     )
     
-    return result.get_column("ghi_mirror")
+#     return result.get_column("ghi_mirror")
+
+
+def mirror_ghi_with_polars(data: po.DataFrame) -> po.Series:
+
+    logger.info("with mirrored ghi")
+
+    # 1. Creamos las columnas base y condiciones lógicas iniciales
+    df_processed = data.with_columns([
+        po.col("tst").dt.date().alias("date"),
+        po.col("tst").dt.hour().alias("hour"),
+        (po.col("cosz") > 0).alias("daytime"),
+        (po.col("cosz") <= 0).alias("nighttime"),
+    ]).with_columns([
+        (po.col("hour") < 12).alias("am"),
+        (po.col("hour") >= 12).alias("pm"),
+        # Se anula GHI en la noche (this_ghi_filled.loc[nighttime] = np.nan)
+        po.when(po.col("nighttime")).then(None).otherwise(po.col("ghi")).alias("ghi_filled")
+    ])
+
+    # 2. Función interna que procesará cada día (grupo) de forma eficiente
+    def process_day(day_df: po.DataFrame) -> po.DataFrame:
+        # Extraemos arrays de numpy para la interpolación (Operación en memoria ultra rápida)
+        cosz = day_df["cosz"].to_numpy()
+        ghi_filled = day_df["ghi_filled"].to_numpy()
+        
+        am = day_df["am"].to_numpy()
+        pm = day_df["pm"].to_numpy()
+        daytime = day_df["daytime"].to_numpy()
+        nighttime = day_df["nighttime"].to_numpy()
+
+        # Máscaras combinadas
+        am_daytime = am & daytime
+        am_nighttime = am & nighttime
+        pm_daytime = pm & daytime
+        pm_nighttime = pm & nighttime
+
+        # Copia para rellenar el "espejo"
+        ghi_mirror = ghi_filled.copy()
+
+        # Interpolación AM
+        if np.any(am_daytime) and np.any(am_nighttime):
+            # numpy.interp requiere que el eje X (cosz) esté ordenado de forma ascendente
+            sort_idx = np.argsort(cosz[am_daytime])
+            xi = cosz[am_daytime][sort_idx]
+            yi = ghi_filled[am_daytime][sort_idx]
+            
+            # Evaluamos en -cosz de la noche y guardamos el negativo del resultado
+            interp_vals = np.interp(-cosz[am_nighttime], xi, yi, left=np.nan, right=np.nan)
+            ghi_mirror[am_nighttime] = -interp_vals
+
+        # Interpolación PM
+        if np.any(pm_daytime) and np.any(pm_nighttime):
+            sort_idx = np.argsort(cosz[pm_daytime])
+            xi = cosz[pm_daytime][sort_idx]
+            yi = ghi_filled[pm_daytime][sort_idx]
+            
+            interp_vals = np.interp(-cosz[pm_nighttime], xi, yi, left=np.nan, right=np.nan)
+            ghi_mirror[pm_nighttime] = -interp_vals
+
+        # Devolvemos una serie temporal polars con el resultado
+        return po.DataFrame({"ghi_mirror": ghi_mirror})
+
+    # 3. Aplicamos el procesamiento por día en paralelo usando group_by
+    # Maintain_order garantiza que el resultado no se desordene
+    result_df = df_processed.group_by("date", maintain_order=True).map_groups(process_day)
+
+    return result_df["ghi_mirror"]
 
 
 def classify_with_polars(df: po.DataFrame, full_output: bool = False) -> po.DataFrame:

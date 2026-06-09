@@ -1,20 +1,20 @@
 
 import pandas as pd
 import pylab as pl
-import sunwhere
 
 from .skytype import SkyType
 
 
 def density_ktk(sky_type: pd.Series, data: pd.DataFrame, latitude: float, longitude: float):
+    import sunwhere
 
     required = ["ghi", "dif"]
     if missing := list(set(required).difference(data.columns)):
         raise ValueError(f"missing required variables: {', '.join(missing)}")
 
-    solpos = sunwhere.sites(data.index, latitude=latitude, longitude=longitude)
-    data["sza"] = solpos.sza.isel(location=0).to_pandas()
-    data["eth"] = solpos.eth().isel(location=0).to_pandas()
+    solpos = sunwhere.sites(data.index.rename("time"), latitude=latitude, longitude=longitude)
+    data["sza"] = solpos.sza.isel(site=0).to_pandas()
+    data["eth"] = solpos.eth().isel(site=0).to_pandas()
 
     df = data.eval(
         """

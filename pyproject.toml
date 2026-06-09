@@ -1,28 +1,33 @@
 
 [build-system]
-requires = ["uv_build"]
+requires = ["uv-build>=0.7.19"]
 build-backend = "uv_build"
 
-
 [project]
-name = "caelus"
+name = "caelus-solar"
 version = "0.2.0"
 description = "CAELUS: Classification Algorithm for the Evaluation of the cLoUdless Situations"
 readme = "README.md"
-requires-python = ">=3.11"
-license-files = ["LICENSE"]
-authors = [
-    { name = "Jose A Ruiz-Arias", email = "jararias@uma.es" }
-]
+requires-python = ">=3.12"
+authors = [{name = "Jose A Ruiz-Arias", email = "jararias@uma.es"}]
+license = {text = "CC BY-NC-SA 4.0"}
 keywords = [
     "solar radiation",
-    "synthetic",
-    "1-min resolution"
+    "sky conditions",
+    "1-min resolution",
+    "clear-sky conditions",
+    "cloud enhancement",
+    "atmospheric modelling",
+    "solar energy"
 ]
 classifiers = [
     "Natural Language :: English",
     "Intended Audience :: Science/Research",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: Physics"
 ]
 
 dependencies = [
@@ -33,11 +38,18 @@ dependencies = [
     "platformdirs>=4.9.6",
     "polars>=1.40.1",
     "pyarrow>=24.0.0",
-    "pysparta",
+    "sparta-solar>=0.2.0",
     "scipy>=1.17.1",
-    "sunwhere",
+    "sunwhere>=1.4.1",
     "typer>=0.25.0",
 ]
+
+[project.urls]
+Homepage = "https://jararias.github.io/caelus"
+Documentation = "https://jararias.github.io/caelus"
+Repository = "https://jararias.github.io/caelus"
+"Bug Tracker" = "https://jararias.github.io/caelus/issues"
+Changelog = "https://jararias.github.io/caelus/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
@@ -47,11 +59,15 @@ dev = [
     "seaborn>=0.13.2",
 ]
 
-[project.urls]
-Homepage = "https://github.com/jararias/caelus"
-
 # [project.scripts]
 # caelus = "caelus.cli:main"
+
+[tool.uv.build-backend]
+module-name = "caelus"
+
+[tool.uv-build.targets.wheel]
+packages = ["caelus"]
+package-dir = {"" = "src"}
 
 [tool.ruff]
 line-length = 120
@@ -88,7 +104,3 @@ ignore = [
 known-first-party = [
     "src/caelus"
 ]
-
-[tool.uv.sources]
-pysparta = { git = "https://github.com/jararias/pysparta" }
-sunwhere = { git = "https://github.com/jararias/sunwhere" }

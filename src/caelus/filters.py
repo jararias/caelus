@@ -9,7 +9,6 @@ from loguru import logger
 from . import options
 from .skytype import SkyType
 
-
 logger.disable(__name__)
 logger = logger.opt(colors=True)
 
@@ -17,6 +16,7 @@ logger = logger.opt(colors=True)
 @functools.singledispatch
 def apply(sky_type, df_indices, full_output) -> pd.Series | po.DataFrame:
     raise NotImplementedError(f"apply not implemented for sky_type of type {type(sky_type)}")
+
 
 @apply.register
 def _(sky_type: pd.Series | pd.DataFrame, df_indices: pd.DataFrame, full_output: bool = True) -> pd.Series:
