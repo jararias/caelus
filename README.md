@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="assets/sky_type_pie_all_climates.png" alt="Sky type distribution">
+    <img src="https://raw.githubusercontent.com/jararias/caelus/main/assets/sky_type_pie_all_climates.png" alt="Sky type distribution">
 </p>
 
 # CAELUS: Classification Algorithm for the Evaluation of the cLoUdiness Situations

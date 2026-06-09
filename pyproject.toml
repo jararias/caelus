@@ -5,7 +5,7 @@ build-backend = "uv_build"
 
 [project]
 name = "caelus-solar"
-version = "0.2.0"
+version = "0.3.0"
 description = "CAELUS: Classification Algorithm for the Evaluation of the cLoUdless Situations"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -55,6 +55,7 @@ Changelog = "https://jararias.github.io/caelus/blob/main/CHANGELOG.md"
 dev = [
     "ipython>=9.13.0",
     "pyinstrument>=5.1.2",
+    "pykeepass>=4.1.1.post1",
     "ruff>=0.15.12",
     "seaborn>=0.13.2",
 ]
