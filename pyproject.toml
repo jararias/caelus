@@ -5,7 +5,7 @@ build-backend = "uv_build"
 
 [project]
 name = "caelus-solar"
-version = "0.3.0"
+version = "0.3.1"
 description = "CAELUS: Classification Algorithm for the Evaluation of the cLoUdless Situations"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -42,6 +42,8 @@ dependencies = [
     "scipy>=1.17.1",
     "sunwhere>=1.4.1",
     "typer>=0.25.0",
+    "ipython>=9.14.1",
+    "pyqt6>=6.11.0",
 ]
 
 [project.urls]
@@ -60,8 +62,8 @@ dev = [
     "seaborn>=0.13.2",
 ]
 
-# [project.scripts]
-# caelus = "caelus.cli:main"
+[project.scripts]
+caelus = "caelus.cli:main"
 
 [tool.uv.build-backend]
 module-name = "caelus"

@@ -1,4 +1,3 @@
-
 import csv
 from pathlib import Path
 
@@ -6,15 +5,15 @@ import pandas as pd
 import typer
 from typing_extensions import Annotated
 
-from . import classify, REQUIRED_TO_CLASSIFY
+from . import REQUIRED_TO_CLASSIFY, classify
 from .skytype import SkyType
-
 
 DATE_TIME_COLUMNS = {"Year", "Month", "Day", "Hour", "Minute", "Second"}
 
+
 def load_data(path):
     df = pd.read_csv(path)
-    
+
     if DATE_TIME_COLUMNS.issubset(df.columns):
         times = pd.to_datetime(df.get(list(DATE_TIME_COLUMNS)))
         cols_to_drop = list(DATE_TIME_COLUMNS)
@@ -23,26 +22,35 @@ def load_data(path):
         cols_to_drop = ["times"]
     else:
         raise AttributeError(
-            'expected a column "times" with the UTC row timestamps or, alternatively, '
-            'the columns "Year", "Month", "Day", "Hour", "Minute", "Second"')
+            'expected a column "times" with UTC row timestamps or, alternatively, '
+            '"Year", "Month", "Day", "Hour", "Minute", "Second" columns'
+        )
 
-    df = (df.drop(columns=cols_to_drop, axis=1)
-          .set_index(times)
-          .sort_index(axis=0))
+    df = df.drop(columns=cols_to_drop).set_index(times).sort_index(axis=0)
 
     if not REQUIRED_TO_CLASSIFY.issubset(df.columns):
-        raise AttributeError(
-            "there are missing columns that are required. The required columns are "
-            f"{REQUIRED_TO_CLASSIFY}. The provided columns are {set(df.columns)}")
+        raise AttributeError(f"missing required columns: {set(REQUIRED_TO_CLASSIFY) - set(df.columns)}")
 
     return df
 
+
 csvfile_argument = typer.Argument(
     show_default=False,
-    help=("csv input file. Must have a column 'times' with UTC timestamps for "
-          "each row or, alternatively, the columns 'Year', 'Month', 'Day', 'Hour', "
-          "'Minute' and 'Second'. `ghi` and `ghicda` are also required columns. "
-          "See the documentation for more details.")
+    help=(
+        "csv input file. Must have a 'times' column with UTC timestamps for each row or, "
+        "alternatively, the columns 'Year', 'Month', 'Day', 'Hour', 'Minute' and 'Second'. "
+        "`ghi` and `ghics` are also required. See the documentation for more details."
+    ),
+)
+
+lat_argument = typer.Argument(
+    show_default=False,
+    help="latitude of the location in decimal degrees",
+)
+
+lon_argument = typer.Argument(
+    show_default=False,
+    help="longitude of the location in decimal degrees",
 )
 
 outfile_argument = typer.Argument(
@@ -50,9 +58,12 @@ outfile_argument = typer.Argument(
     help="csv output file",
 )
 
+
 @typer.run
 def main(
     csvfile: Annotated[Path, csvfile_argument],
+    lat: Annotated[float, lat_argument],
+    lon: Annotated[float, lon_argument],
     output: Annotated[Path, outfile_argument],
 ):
 
@@ -60,7 +71,7 @@ def main(
         raise FileNotFoundError(f'missing input file "{csvfile}"')
 
     data = load_data(csvfile)
-    sky_type = classify(data).to_frame("value")
+    sky_type = classify(data, lat, lon).to_frame("value")
 
     with open(csvfile, "r") as f:
         dialect = csv.Sniffer().sniff(f.read(1024))
@@ -77,16 +88,12 @@ def main(
                 sky_type=sky_type.value,
             ).drop(columns=["value"])
         else:
-            sky_type = (sky_type
-                        .reset_index()
-                        .rename(columns={"index": "times", "value": "sky_type"}))
+            sky_type = sky_type.reset_index().rename(columns={"index": "times", "value": "sky_type"})
 
-    print(sky_type.sky_type  # noqa: T201
-          .value_counts(normalize=True)
-          .rename(index=lambda n: SkyType(n).name)
-          .to_frame("fraction"))
+    print(  # noqa: T201
+        sky_type.sky_type.value_counts(normalize=True)  # noqa: T201
+        .rename(index=lambda n: SkyType(n).name)
+        .to_frame("fraction")
+    )
 
-    sky_type.to_csv(output,
-                    index=False,
-                    sep=dialect.delimiter,
-                    lineterminator=dialect.lineterminator)
+    sky_type.to_csv(output, index=False, sep=dialect.delimiter, lineterminator=dialect.lineterminator)

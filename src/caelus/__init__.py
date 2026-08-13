@@ -1,7 +1,7 @@
 import importlib.metadata
 
 from . import data
-from .classifier import classify
+from .classifier import classify, REQUIRED_TO_CLASSIFY
 from .logtools import enable_logger
 
 try:
